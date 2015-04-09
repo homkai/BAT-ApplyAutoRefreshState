@@ -15,7 +15,7 @@
 <script type="text/javascript">
 (function(){
 	var defaultState = '新投递', // 当前你的简历状态
-		TIME_OUT = 40, // 多长时间刷新一次
+		TIME_OUT = 40, // 多长秒刷新一次
 		api = location.href.replace(/[^\/]\w+\.html/,'api.php'),
 		smsUrl = api+'?sms=true',
 		state = false;
@@ -46,7 +46,7 @@
 				$('.refresh-list').prepend('<li class="error">Refreshed At: '+time+'</li><li class="error">&nbsp;&nbsp;&nbsp;Failed!</li>');
 			}
 			if(!state){
-				setTimeout(autoQuery, TIME_OUT);
+				setTimeout(autoQuery, TIME_OUT*1000);
 			}
 		});
 	};
