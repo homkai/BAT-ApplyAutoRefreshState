@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Automatically Refresh My AliApply</title>
+<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+<style>
+.success{color: #0f0}
+.error{color: #f00}
+</style>
+</head>
+<body>
+<h1>Automatically Refresh My AliApply</h1>
+<ul class="refresh-list"></ul>
+<script type="text/javascript">
+(function(){
+	var defaultState = '新投递', // 当前你的简历状态
+		TIME_OUT = 40, // 多长时间刷新一次
+		api = location.href.replace(/[^\/]\w+\.html/,'api.php'),
+		smsUrl = api+'?sms=true',
+		state = false;
+	var autoQuery = function(){
+		$.get(api, function(data){
+			var time = (new Date()).toLocaleString();
+			console.log('Time:', time);
+			console.log('State:', data);
+			if(data.text && data.text != defaultState){
+				state = true;
+				var message = '阿里巴巴的实习生应聘申请状态已更新！现在状态为：'+data.text+' Time:'+time;
+				$.ajax({
+					url: smsUrl+'&message='+decodeURIComponent(message),
+					dataType: 'jsonp',
+					jsonp: 'callback',
+					async: false,
+					success: function(sms){
+						$('.refresh-list').prepend('<li class="success">&nbsp;&nbsp;&nbsp;'+data.html+'</li>');
+						console.log('SMS', sms);
+						// 更新简历比对状态，重新开始轮询
+						defaultState = data.text;
+						autoQuery();
+					}
+				});
+			} else if(data.text){
+				$('.refresh-list').prepend('<li>Refreshed At: '+time+'</li><li>&nbsp;&nbsp;&nbsp;Not Update!</li>');
+			} else{
+				$('.refresh-list').prepend('<li class="error">Refreshed At: '+time+'</li><li class="error">&nbsp;&nbsp;&nbsp;Failed!</li>');
+			}
+			if(!state){
+				setTimeout(autoQuery, TIME_OUT);
+			}
+		});
+	};
+	setTimeout(autoQuery, 500);	
+})();
+</script>
+</body>
+</html>
