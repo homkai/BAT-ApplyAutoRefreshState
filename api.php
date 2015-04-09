@@ -1,11 +1,10 @@
 <?php
-// 登陆后，将campus.alibaba.com域下的JSESSIONID、tmp两个Cookie值填入
-$loginCookie = 'JSESSIONID=...; tmp0=...';
+// 登陆后，将campus.alibaba.com域下的JSESSIONID、tmp0两个Cookie值填入
+$GLOBALS['loginCookie'] = 'JSESSIONID=...; tmp0=...';
 // 你的短信平台账号密码，每个手机号可以免费发10条，也就足够用了！申请链接：http://www.ihuyi.com/product.php#bottom_div
-$smsAccount = 'cf_leasur';
-$smsPassword = '123456';
-$smsMoblie = ''; // 接受状态更新的手机号
-
+$GLOBALS['smsAccount'] 	= 'cf_leasur';
+$GLOBALS['smsPassword'] = '123456';
+$GLOBALS['smsMoblie'] 	= '13666666666'; // 接受状态更新的手机号
 /**
  * 路由入口 
  */
@@ -20,7 +19,7 @@ function main(){
  */
 function stateApi(){
 	$url = 'http://campus.alibaba.com/myJobApply.htm';
-	$cookie = $loginCookie;
+	$cookie = $GLOBALS['loginCookie'];
 	$content = getPageContent($url, $cookie);
 	$state = getApplyState($content);
 	header('Content-Type:application/json; charset=utf-8');
@@ -46,7 +45,7 @@ function getPageContent($url, $cookie = ''){
  * @return string html
  */ 
 function getApplyState($content){
-	$pattern = '/[\s\S]*[^\.]class="state\-name"[^>]+>([\s\S]*?)<\/td>[\s\S]*/';
+	$pattern = '/[\s\S]*?[^\.]class="state\-name"[^>]+>([\s\S]*?)<\/td>[\s\S]*/';
 	$state = trim(preg_replace($pattern, '$1', $content));
 	return $state;
 }
@@ -56,10 +55,10 @@ function getApplyState($content){
  */
 function smsAliApply(){
 	$target = "http://106.ihuyi.cn/webservice/sms.php?method=Submit";
-	$auth = "account={$smsAccount}&password={$smsPassword}";
+	$auth = "account={$GLOBALS['smsAccount']}&password={$GLOBALS['smsPassword']}";
 	$message = $_GET['message']; // 要发送的短信内容
 	$message = "您的验证码是：666666 ###\n\n".$message."\n\n###      。请不要把验证码泄露给其他人。"; // 这个模板不要改，不然平台就不让你发了！
-	$post_data = $auth."&mobile={$smsMobile}&content=".rawurlencode($message);
+	$post_data = $auth."&mobile={$GLOBALS['smsMoblie']}&content=".rawurlencode($message);
  	$gets =  xml_to_array(post($post_data, $target));
 	header('Content-Type:application/json; charset=utf-8');
 	exit($_GET['callback'].'('.json_encode($gets).')'); // 支持JSONP跨域请求
