@@ -1,29 +1,45 @@
 <?php
-// 登陆后，将campus.alibaba.com域下的JSESSIONID、tmp0两个Cookie值填入
-$GLOBALS['loginCookie'] = 'JSESSIONID=...; tmp0=...';
-// 你的短信平台账号密码，每个手机号可以免费发10条，也就足够用了！申请链接：http://www.ihuyi.com/product.php#bottom_div
-$GLOBALS['smsAccount'] 	= 'cf_leasur';
-$GLOBALS['smsPassword'] = '123456';
-$GLOBALS['smsMoblie'] 	= '13666666666'; // 接受状态更新的手机号
+$GLOBALS = array(
+		// 投递的公司，暂时支持百度和阿里巴巴
+		'type'			=>	'Baidu', // Alibaba
+		// 你的短信平台账号密码，每个手机号可以免费发10条，也就足够用了:
+		'smsAccount'	=>	'', 
+		// 申请链接：http://www.ihuyi.com/product.php#bottom_div：
+		'smsPassword'	=>	'', 
+		// 接受状态更新的手机号：
+		'smsMoblie'		=>	'', 
+		// 1、登陆查询到查询状态的页面
+		// 2、阿里的同学请将campus.alibaba.com域下的JSESSIONID、tmp0两个Cookie值填入：
+		// 2、百度的同学请将http://talent.baidu.com/域下的JSESSIONID、DWRSESSIONID两个Cookie值填入：
+		'loginCookie'	=>	'JSESSIONID=...; DWRSESSIONID=...',
+		// 填入当前的状态 百度的为后面两个状态，阿里的只有一个状态如：新投递
+		'stateNow'		=>	'发布中|新提交'
+);
 /**
  * 路由入口 
  */
 main();
 function main(){
-	if(!$_GET) return stateApi();
-	if($_GET['sms']) return smsAliApply();
+	if(!$_GET) return;
+	if(isset($_GET['stateNow'])) return stateNow();
+	if(isset($_GET['stateRefresh'])) return stateRefresh();
+	if(isset($_GET['smsSend'])) return smsSend();
 }
-
 /**
- * 阿里应聘状态JSON API
+ * 应聘状态JSON API
  */
-function stateApi(){
-	$url = 'http://campus.alibaba.com/myJobApply.htm';
+function stateRefresh(){
+	$url = 'http://talent.baidu.com/baidu/web/templet1000/index/corpshowDeliveryRecordbaidu!listApplyPosition?urlCorpEdition=null&operational=68D9D2019E2EB7084A99779FC62F2E78FCDF992CCBA7AB75F8B9B2A44FDACBAC5DB5F4C1FBB34881873190D09DAC66DB61BDC43A7589B5F5A0D4B16AFCA9C67FF88FF34B80B0BDE425AB2756A906729374FCF7BE70ADD3D0947F4F2B7E69C3BAC76AEEB8312398F4C7EA7E0C44032E259E11CF75A7837F70';
 	$cookie = $GLOBALS['loginCookie'];
 	$content = getPageContent($url, $cookie);
-	$state = getApplyState($content);
-	header('Content-Type:application/json; charset=utf-8');
-	exit(json_encode(array('text'=>strip_tags($state), 'html'=>$state), JSON_UNESCAPED_UNICODE));
+	$state = call_user_func('getApplyState_'.$GLOBALS['type'], $content);
+	echoJSON($state);
+}
+/**
+ * 应聘状态JSON API
+ */
+function stateNow(){
+	echoJSON(array('type'=>$GLOBALS['type'], 'now'=>$GLOBALS['stateNow']));
 }
 /**
  * CURL抓取页面内容
@@ -44,16 +60,36 @@ function getPageContent($url, $cookie = ''){
  * @param string $content
  * @return string html
  */ 
-function getApplyState($content){
-	$pattern = '/[\s\S]*?[^\.]class="state\-name"[^>]+>([\s\S]*?)<\/td>[\s\S]*/';
+function getApplyState_Baidu($content){
+	$pattern = '/[\s\S]*<tbody>\s*?<tr>([\s\S]*?)<\/tr>\s*?<\/tbody>[\s\S]*/';
 	$state = trim(preg_replace($pattern, '$1', $content));
+	$state = trim(preg_replace('/\s/', '', $state));
+	$state = preg_replace('/[\s\S]*<td>([\s\S]*?)<\/td><td>([\s\S]*?)<\/td>/', '$1|$2', $state);
 	return $state;
+}
+/**
+ * 阿里应聘状态页面解析
+ * @param string $content
+ * @return string html
+ */ 
+function getApplyState_Alibaba($content){
+	$pattern = '/[\s\S]*?[^\.]class="state\-name"[^>]+>([\s\S]*?)<\/td>[\s\S]*/';
+	$state = strip_tags(trim(preg_replace($pattern, '$1', $content)));
+	return $state;
+}
+/**
+ * 输出JSON
+ * @param mixed:string|array
+ */
+function echoJSON($data){
+	header('Content-Type:application/json; charset=utf-8');
+	exit(json_encode($data, JSON_UNESCAPED_UNICODE));
 }
 /**
  * 短信请求接口（http://www.ihuyi.com/）
  * 这个短信平台提供的是POST请求，XML格式返回
  */
-function smsAliApply(){
+function smsSend(){
 	$target = "http://106.ihuyi.cn/webservice/sms.php?method=Submit";
 	$auth = "account={$GLOBALS['smsAccount']}&password={$GLOBALS['smsPassword']}";
 	$message = $_GET['message']; // 要发送的短信内容
