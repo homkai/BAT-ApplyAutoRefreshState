@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Automatically Refresh My BATApply</title>
-<script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.min.js"></script>
+<script src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
 <style>
 .success{color: #9acd32}
 .error{color:  #a52a2a}
 </style>
 </head>
 <body>
-<h1>Automatically Refresh My <span class="apply-type">BAT</span>Apply</h1>
+<h1>Automatically Refresh My <span id="apply-company">BAT</span> Apply</h1>
 <p id="start"></p>
 <ul id="refresh-list"></ul>
 <script type="text/javascript">
@@ -18,20 +18,19 @@
 	var applyType = '',
         stateNow = '', // 当前你的简历状态
         TIME_OUT = 80, // 多长秒刷新一次
-		baseURL = location.href.replace(/[^\/]\w+\.html/,'api.php'),
-		smsURL = baseURL+'?smsSend',
+		baseURL = location.href.replace(/[^\/]\w+\.html/, 'api.php'),		
 		state = false;
 	// 获取当前状态，启动程序
-	$.get(baseURL+'?stateNow', function(data){
-		$('.apply-type').html(data.type);
-		applyType = data.type;
+	$.get(baseURL+'/initialState', function(data){
+		$('#apply-company').html(data.company);
+		applyType = data.company;
         stateNow = data.now;
 	    $('#start').html('<span class="success">程序已启动，当前状态：'+data.now+'</span>');
 	    autoQuery();
 	});
 	// 自动刷新
 	var autoQuery = function(){
-		$.get(baseURL+'?stateRefresh', function(data){
+		$.get(baseURL+'/refreshState', function(data){
 			var time = (new Date()).toLocaleString();
 			console.log('Time:', time);
 			console.log('State:', data);
@@ -39,7 +38,10 @@
 				state = true;
 				var message = applyType+'的应聘申请状态已更新！现在状态为：'+data+' Time:'+time;
 				$.ajax({
-					url: smsUrl+'&message='+decodeURIComponent(message),
+					url: baseURL+'/notify',
+					data: {
+						message: message
+					},
 					dataType: 'jsonp',
 					jsonp: 'callback',
 					async: false,
