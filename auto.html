@@ -14,24 +14,53 @@
 <p id="start"></p>
 <ul id="refresh-list"></ul>
 <script type="text/javascript">
+$.extend({
+	/**
+	 * $.date 类PHP date方法 $.date('Y-m-d H:i:s', [timestamp])
+	 * timestamp 为毫秒级型的
+	 */
+	date: function(format, timestamp){
+	    var date = timestamp ? new Date(timestamp) : new Date(), weekday;
+	    var pad2 = function(num){
+	    	return num < 10 ? '0'+num : num;
+	    };
+	    return format.replace(/[YmdHis]/g, function(m0){
+	        switch(m0){
+	            case 'Y':
+	                return date.getFullYear();
+	            case 'm':
+	                return pad2(date.getMonth()+1);
+	            case 'd':
+	                return pad2(date.getDate());
+	            case 'H':
+	                return pad2(date.getHours());
+	            case 'i':
+	                return pad2(date.getMinutes());
+	            case 's':
+	                return pad2(date.getSeconds());
+	        }
+	    });
+	}
+});
 (function(){
 	var applyType = '',
         stateNow = '', // 当前你的简历状态
-        TIME_OUT = 80, // 多长秒刷新一次
-		baseURL = location.href.replace(/[^\/]\w+\.html/, 'api.php'),		
-		state = false;
+        intervalTime = 0, // 多长秒刷新一次
+		baseURL = location.href.replace(/[^\/]\w+\.html/, 'api.php'), // 基准URL
+		state = false; // 状态是否更新
 	// 获取当前状态，启动程序
 	$.get(baseURL+'/initialState', function(data){
 		$('#apply-company').html(data.company);
 		applyType = data.company;
         stateNow = data.now;
-	    $('#start').html('<span class="success">程序已启动，当前状态：'+data.now+'</span>');
+        intervalTime = data.interval;
+	    $('#start').html('<span class="success">程序已启动，当前状态：<b id="current-state">'+data.now+'</b></span>');
 	    autoQuery();
 	});
 	// 自动刷新
 	var autoQuery = function(){
 		$.get(baseURL+'/refreshState', function(data){
-			var time = (new Date()).toLocaleString();
+			var time = $.date('Y-m-d H:i');
 			console.log('Time:', time);
 			console.log('State:', data);
 			if(data && data != stateNow){
@@ -46,13 +75,15 @@
 					jsonp: 'callback',
 					async: false,
 					success: function(sms){
-						$('#refresh-list').prepend('<li class="success">&nbsp;&nbsp;&nbsp;'+data+'</li>');
+						$('#refresh-list').prepend('<li class="success">Refreshed At: '+time+'</li><li class="success">&nbsp;&nbsp;&nbsp;'+data+'</li>');
+						$('#current-state').html(data);
 						console.log('SMS', sms);
 						// 更新简历比对状态，重新开始轮询
 						stateNow = data;
-						// 修正bug
-						state = false;
-						autoQuery();
+						setTimeout(function(){
+	                        state = false;
+	                        autoQuery();
+						}, intervalTime*1000);
 					}
 				});
 			} else if(data){
@@ -61,7 +92,7 @@
 				$('#refresh-list').prepend('<li class="error">Refreshed At: '+time+'</li><li class="error">&nbsp;&nbsp;&nbsp;Failed!</li>');
 			}
 			if(!state){
-				setTimeout(autoQuery, TIME_OUT*1000);
+				setTimeout(autoQuery, intervalTime*1000);
 			}
 		});
 	};

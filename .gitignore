@@ -1,0 +1,4 @@
+*.project
+.settings/.jsdtscope
+*.container
+*.name

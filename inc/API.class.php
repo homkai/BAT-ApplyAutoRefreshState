@@ -3,6 +3,7 @@ class API{
 	
 	private $Company = null;
 	private $currentState = '';
+	private $interval = 0;
 	
 	public function __construct(){
 		$company = C('company');
@@ -11,6 +12,7 @@ class API{
 		}
 		$this->Company = new $companyClass();
 		$this->currentState = C('currentState');
+		$this->interval = C('interval');
 	}
 	
 	/**
@@ -29,7 +31,7 @@ class API{
 	 * 应聘状态JSON API
 	 */
 	public function initialState(){
-		show_json(array('company'=>$this->Company->getName(), 'now'=>$this->currentState));
+		show_json(array('company'=>$this->Company->getName(), 'now'=>$this->currentState, 'interval'=>$this->interval));
 	}
 	
 	/**
