@@ -50,6 +50,8 @@
 						console.log('SMS', sms);
 						// 更新简历比对状态，重新开始轮询
 						stateNow = data;
+						// 修正bug
+						state = false;
 						autoQuery();
 					}
 				});
