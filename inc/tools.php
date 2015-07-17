@@ -49,7 +49,7 @@ function curl_request($req){
 	}
 	curl_setopt_array($ch, $options);
 	$ret = curl_exec($ch);
-	$ret = $ret ?: curl_error($ch);
+	//$ret = $ret ?: curl_error($ch);
 	curl_close($ch);
 	return $ret;
 }
