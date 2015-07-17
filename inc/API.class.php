@@ -22,7 +22,7 @@ class API{
 		$url = $this->Company->getPageURL();
 		$cookie = $this->Company->getLoginCookie();
 		$content = curl_request(compact('url', 'cookie'));
-		$state = $this->Company->getApplyState($content);
+		$state = $content ? $this->Company->getApplyState($content) : false;
 // 		$state = '测试更新';
 		show_json($state);
 	}
